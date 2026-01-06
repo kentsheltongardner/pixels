@@ -1,3 +1,4 @@
+Color selector alignment on right side, div appearing behind borders
 Alt select for colors on canvas
 Initial color selector values
 Zooming increments

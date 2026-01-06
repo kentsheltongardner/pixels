@@ -250,7 +250,7 @@ export default class ColorPicker {
         const y                                    = (1 - hsv.v) * rect.height
         this.paletteSelector.style.left            = `${x}px`
         this.paletteSelector.style.top             = `${y}px`
-        this.paletteSelector.style.boxShadow       = hsv.v > 0.5 ? '0 0 2px #0008 inset' : '0 0 2px #fff8 inset'
+        this.paletteSelector.style.borderColor     = hsv.v > 0.5 ? '#0008' : '#fff8'
         this.paletteSelector.style.backgroundColor = this.rgbToCSSColorOpaque(this.activeColor)
     }
 
@@ -345,7 +345,7 @@ export default class ColorPicker {
         this.paletteSelector.style.top             = `${Math.round(clampedY)}px`
         const saturation                           = Math.max(0, Math.min(1, clampedX / rect.width))
         const value                                = Math.max(0, Math.min(1, 1 - (clampedY / rect.height)))
-        this.paletteSelector.style.boxShadow       = value > 0.5 ? '0 0 2px #0008 inset' : '0 0 2px #fff8 inset'
+        this.paletteSelector.style.borderColor     = value > 0.5 ? '#0008' : '#fff8'
         const max                                  = parseInt(this.hueSlider.max)
         const hueDegrees                           = parseInt(this.hueSlider.value)
         const currentHue                           = hueDegrees / max

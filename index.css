@@ -27,7 +27,7 @@
 
     --standard-border-radius: 3px;
     --standard-border-width: 1px;
-    --standard-border-color: #0004;
+    --standard-border-color: #bebebe;
     --standard-padding: 5px;
     --standard-background-color: #eeeeee;
 
@@ -332,7 +332,8 @@ canvas {
     height: var(--range-slider-thumb-size);
     border-radius: var(--standard-border-radius);
     transform: translate(-50%, -50%);
-    box-shadow: 0 0 2px #fff8 inset;
+    border: 1px solid #fff8;
+    transition: border-color 0.5s ease;
     cursor: pointer;
     pointer-events: none;
 }
@@ -422,7 +423,7 @@ canvas {
     width: 4px;
     height: 4px;
     border-radius: 2px;
-    transition: background-color 0.5s ease;
+    transition: opacity 0.5s ease, background-color 0.5s ease;
     opacity: 0;
 }
 .color-selector-indicator.active {

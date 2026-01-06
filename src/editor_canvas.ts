@@ -82,7 +82,7 @@ export default class EditorCanvas {
         this.displayCanvas.addEventListener('pointerup', e => this.handlePointerUp(e))
         this.displayCanvas.addEventListener('pointerleave', () => this.handlePointerLeave())
         this.displayCanvas.addEventListener('pointercancel', e => this.handlePointerUp(e))
-        this.displayCanvas.addEventListener('wheel', e => this.handleWheel(e))
+        this.displayCanvas.addEventListener('wheel', e => this.handleWheel(e), { passive: false })
         this.displayCanvas.addEventListener('contextmenu', e => e.preventDefault())
 
         // Listen for mouse leave on window to catch when mouse leaves browser entirely
