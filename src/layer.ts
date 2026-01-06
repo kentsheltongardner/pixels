@@ -23,7 +23,7 @@ export default class Layer {
         this.canvas    = new OffscreenCanvas(this.width, this.height)
         this.ctx       = this.canvas.getContext('2d') as OffscreenCanvasRenderingContext2D
 
-        this.imageData.data.fill(255)
+        this.imageData.data.fill(0)
         this.commitEdits()
     }
 
@@ -31,7 +31,7 @@ export default class Layer {
         this.imageData.data[y * this.width * 4 + x * 4] = color.r
         this.imageData.data[y * this.width * 4 + x * 4 + 1] = color.g
         this.imageData.data[y * this.width * 4 + x * 4 + 2] = color.b
-        this.imageData.data[y * this.width * 4 + x * 4 + 3] = 255
+        this.imageData.data[y * this.width * 4 + x * 4 + 3] = color.a
     }
 
     runPixelShader(shader: PixelShader) {

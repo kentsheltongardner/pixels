@@ -18,8 +18,9 @@
     --opacity-slider-background: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 1)),
                                   var(--checkered-background);
     --opacity-slider-background-position: 0 0, center;
-    --opacity-slider-background-size: auto, auto;
+    --opacity-slider-background-size: auto, 16px;
     --opacity-slider-background-repeat: no-repeat, repeat;
+
 
     --red-slider-background: linear-gradient(to right, rgb(0, 0, 0), rgb(255, 0, 0));
     --green-slider-background: linear-gradient(to right, rgb(0, 0, 0), rgb(0, 255, 0));
@@ -170,18 +171,21 @@ input[type="range"]::-moz-range-thumb {
     background-position: var(--opacity-slider-background-position);
     background-size: var(--opacity-slider-background-size);
     background-repeat: var(--opacity-slider-background-repeat);
+    image-rendering: pixelated;
 }
 #opacity-slider::-moz-range-track {
     background: var(--opacity-slider-background);
     background-position: var(--opacity-slider-background-position);
     background-size: var(--opacity-slider-background-size);
     background-repeat: var(--opacity-slider-background-repeat);
+    image-rendering: pixelated;
 }
 #opacity-slider::-ms-track {
     background: var(--opacity-slider-background);
     background-position: var(--opacity-slider-background-position);
     background-size: var(--opacity-slider-background-size);
     background-repeat: var(--opacity-slider-background-repeat);
+    image-rendering: pixelated;
 }
 
 
@@ -378,6 +382,8 @@ canvas {
     background: var(--checkered-background);
     background-repeat: repeat;
     background-position: center;
+    background-size: 16px;
+    image-rendering: pixelated;
     z-index: 0;
     pointer-events: none;
 }
@@ -422,10 +428,10 @@ canvas {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(var(--standard-square-button-size), 1fr));
     gap: var(--standard-padding);
-}
+} 
 
 #editor-canvas {
-    background-color: #0004;
+    background-color: #8cf;
     position: absolute;
     top: 0;
     left: 0;

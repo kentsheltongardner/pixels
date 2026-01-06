@@ -1,0 +1,4 @@
+Add functionality to save and load colors from the palette
+Design a tool system
+Add undo and redo functionality
+Add tools

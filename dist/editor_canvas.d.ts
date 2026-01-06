@@ -4,6 +4,7 @@ export default class EditorCanvas {
     private height;
     private originX;
     private originY;
+    private hasBeenInitialized;
     private scale;
     private spaceKeyPressed;
     private mouseX;
@@ -17,7 +18,9 @@ export default class EditorCanvas {
     private offscreenCtx;
     private mousePositionContainer;
     private layers;
+    private checkeredBackgroundPattern;
     constructor(colorPicker: ColorPicker);
+    private loadCheckeredBackground;
     private addEventListeners;
     private handlePointerDown;
     private drawPixelAtMousePosition;
@@ -31,7 +34,7 @@ export default class EditorCanvas {
     private updateCanvasSize;
     private handleResize;
     private handleWheel;
-    private zoomTo;
+    private zoom;
     private displayToBitmapX;
     private displayToBitmapY;
     private handleGlobalMouseMove;

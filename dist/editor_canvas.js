@@ -13,6 +13,7 @@ export default class EditorCanvas {
     height;
     originX = 0;
     originY = 0;
+    hasBeenInitialized = false;
     scale;
     spaceKeyPressed;
     mouseX;
@@ -26,6 +27,7 @@ export default class EditorCanvas {
     offscreenCtx;
     mousePositionContainer;
     layers = [];
+    checkeredBackgroundPattern = null;
     constructor(colorPicker) {
         this.colorPicker = colorPicker;
         this.width = DEFAULT_WIDTH;
@@ -44,8 +46,19 @@ export default class EditorCanvas {
         const defaultLayer = new Layer(this.width, this.height);
         this.mousePositionContainer = document.getElementById('mouse-position-container');
         this.layers.push(defaultLayer);
+        this.loadCheckeredBackground();
         this.render();
         this.addEventListeners();
+    }
+    loadCheckeredBackground() {
+        const checkeredBackground = new Image();
+        checkeredBackground.onload = () => {
+            const pattern = this.offscreenCtx.createPattern(checkeredBackground, 'repeat');
+            pattern.setTransform(new DOMMatrix().scale(16, 16));
+            this.checkeredBackgroundPattern = pattern;
+            this.render();
+        };
+        checkeredBackground.src = './res/images/checkered_background.png';
     }
     addEventListeners() {
         this.displayCanvas.addEventListener('pointerdown', e => this.handlePointerDown(e));
@@ -155,27 +168,30 @@ export default class EditorCanvas {
         }
     }
     updateCanvasSize() {
-        // Use clientWidth/clientHeight for more reliable sizing of absolutely positioned elements
-        const cssWidth = this.displayCanvas.clientWidth;
-        const cssHeight = this.displayCanvas.clientHeight;
-        if (cssWidth === 0 || cssHeight === 0) {
-            // Canvas not yet laid out, try getBoundingClientRect as fallback
-            const rect = this.displayCanvas.getBoundingClientRect();
-            if (rect.width === 0 || rect.height === 0) {
-                // Still not ready, schedule for next frame
-                requestAnimationFrame(() => this.updateCanvasSize());
-                return;
-            }
-            this.displayCanvas.width = rect.width;
-            this.displayCanvas.height = rect.height;
-            this.originX = Math.floor(rect.width / 2 - this.width / 2 * this.scale);
-            this.originY = Math.floor(rect.height / 2 - this.height / 2 * this.scale);
+        const oldWidth = this.displayCanvas.width || 0;
+        const oldHeight = this.displayCanvas.height || 0;
+        const cssWidth = this.displayCanvas.clientWidth || this.displayCanvas.offsetWidth;
+        const cssHeight = this.displayCanvas.clientHeight || this.displayCanvas.offsetHeight;
+        this.displayCanvas.width = cssWidth;
+        this.displayCanvas.height = cssHeight;
+        const pixelWidth = this.displayCanvas.width;
+        const pixelHeight = this.displayCanvas.height;
+        if (!this.hasBeenInitialized) {
+            this.hasBeenInitialized = true;
+            this.originX = (pixelWidth / 2 - this.width * this.scale / 2) / this.scale;
+            this.originY = (pixelHeight / 2 - this.height * this.scale / 2) / this.scale;
         }
         else {
-            this.displayCanvas.width = cssWidth;
-            this.displayCanvas.height = cssHeight;
-            this.originX = Math.floor(cssWidth / 2 - this.width / 2 * this.scale);
-            this.originY = Math.floor(cssHeight / 2 - this.height / 2 * this.scale);
+            // Calculate what bitmap point is currently at the center of the old display
+            const centerDisplayX = oldWidth / 2;
+            const centerDisplayY = oldHeight / 2;
+            const centerBitmapX = (centerDisplayX - this.originX * this.scale) / this.scale;
+            const centerBitmapY = (centerDisplayY - this.originY * this.scale) / this.scale;
+            // Adjust origin so the same bitmap point is at the new center (scale remains constant)
+            const newCenterDisplayX = pixelWidth / 2;
+            const newCenterDisplayY = pixelHeight / 2;
+            this.originX = (newCenterDisplayX - centerBitmapX * this.scale) / this.scale;
+            this.originY = (newCenterDisplayY - centerBitmapY * this.scale) / this.scale;
         }
     }
     handleResize() {
@@ -188,11 +204,11 @@ export default class EditorCanvas {
         const scaleDelta = Math.sign(e.deltaY);
         const newScale = Math.max(1, this.scale - scaleDelta);
         if (newScale !== oldScale) {
-            this.zoomTo(newScale);
+            this.zoom(newScale);
             this.render();
         }
     }
-    zoomTo(scale) {
+    zoom(scale) {
         const canvasX = (this.mouseX - this.originX * this.scale) / this.scale;
         const canvasY = (this.mouseY - this.originY * this.scale) / this.scale;
         this.scale = scale;
@@ -207,20 +223,15 @@ export default class EditorCanvas {
         return Math.floor((displayY - this.originY * this.scale) / this.scale);
     }
     handleGlobalMouseMove(e) {
-        // Convert global mouse coordinates to canvas-relative coordinates
         const rect = this.displayCanvas.getBoundingClientRect();
         const canvasX = e.clientX - rect.left;
         const canvasY = e.clientY - rect.top;
-        // Only update mouse position variables if we're not actively interacting
-        // (panning or drawing) to preserve fidelity of movement calculations
         const isInteracting = this.leftMouseButtonDown || this.rightMouseButtonDown;
         if (!isInteracting) {
             this.mouseX = canvasX;
             this.mouseY = canvasY;
-            // Only update display when not interacting to avoid fluctuations during panning
             this.displayMousePositionWithCoords(canvasX, canvasY);
         }
-        // During panning/drawing, display is updated by handlePointerMove to ensure consistency
     }
     displayMousePosition() {
         this.displayMousePositionWithCoords(this.mouseX, this.mouseY);
@@ -231,10 +242,22 @@ export default class EditorCanvas {
         this.mousePositionContainer.textContent = `x: ${bitmapX}, y: ${bitmapY}`;
     }
     render() {
-        this.displayCtx.clearRect(0, 0, this.displayCanvas.width, this.displayCanvas.height);
+        const canvasWidth = this.displayCanvas.width;
+        const canvasHeight = this.displayCanvas.height;
+        this.displayCtx.clearRect(0, 0, canvasWidth, canvasHeight);
         const x = this.originX * this.scale;
         const y = this.originY * this.scale;
         this.displayCtx.imageSmoothingEnabled = false;
+        this.offscreenCtx.imageSmoothingEnabled = false;
+        if (this.checkeredBackgroundPattern) {
+            this.offscreenCtx.fillStyle = this.checkeredBackgroundPattern;
+            this.offscreenCtx.fillRect(0, 0, this.width, this.height);
+        }
+        else {
+            // Fallback: fill with white if pattern hasn't loaded yet
+            this.offscreenCtx.fillStyle = '#ffffff';
+            this.offscreenCtx.fillRect(0, 0, this.width, this.height);
+        }
         for (const layer of this.layers) {
             this.offscreenCtx.drawImage(layer.canvas, 0, 0);
         }

@@ -35,23 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    // Recalculate heights when window is resized
     window.addEventListener('resize', updateExpandedHeights);
-    // Recalculate heights when page becomes visible (handles tab switching, etc.)
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-            // Use setTimeout to ensure layout has updated
-            setTimeout(updateExpandedHeights, 0);
-        }
-    });
-    // Use ResizeObserver for more accurate detection of layout changes
-    const resizeObserver = new ResizeObserver(() => {
-        updateExpandedHeights();
-    });
-    // Observe the main overlay container for layout changes
-    const mainOverlay = document.getElementById('main-overlay');
-    if (mainOverlay) {
-        resizeObserver.observe(mainOverlay);
-    }
 });
 //# sourceMappingURL=index.js.map
