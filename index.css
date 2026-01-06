@@ -13,7 +13,7 @@
         hsl(300, 100%, 50%),
         hsl(360, 100%, 50%));
 
-    --checkered-background: url('./res/images/checkered_background_small.png');
+    --checkered-background: url('./res/images/checkered_background.png');
 
     --opacity-slider-background: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 1)),
                                   var(--checkered-background);
