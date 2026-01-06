@@ -21,7 +21,6 @@
     --opacity-slider-background-size: auto, 16px;
     --opacity-slider-background-repeat: no-repeat, repeat;
 
-
     --red-slider-background: linear-gradient(to right, rgb(0, 0, 0), rgb(255, 0, 0));
     --green-slider-background: linear-gradient(to right, rgb(0, 0, 0), rgb(0, 255, 0));
     --blue-slider-background: linear-gradient(to right, rgb(0, 0, 0), rgb(0, 0, 255));
@@ -30,6 +29,7 @@
     --standard-border-width: 1px;
     --standard-border-color: #0004;
     --standard-padding: 5px;
+    --standard-background-color: #eeeeee;
 
     --standard-square-button-size: 25px;
 }
@@ -258,12 +258,24 @@ canvas {
 }
 
 
+.bar {
+    padding: var(--standard-padding);
+    background-color: var(--standard-background-color);
+}
+
+#bottom {
+    border-top: var(--standard-border-width) solid var(--standard-border-color);
+}
+#tabs {
+    border-bottom: var(--standard-border-width) solid var(--standard-border-color);
+}
 
 .container { 
+    margin-top: calc(-1 * var(--standard-border-width));
     padding: var(--standard-padding);
     border: var(--standard-border-width) solid var(--standard-border-color);
     border-radius: var(--standard-border-radius);
-    background-color: #ccc;
+    background-color: var(--standard-background-color);
     pointer-events: auto;
 }
 
@@ -310,7 +322,7 @@ canvas {
 
 #color-picker-canvas {
     width: 100%;
-    height: 100%;
+    height: 224px;
     will-change: contents;
 }
 
@@ -431,7 +443,7 @@ canvas {
 } 
 
 #editor-canvas {
-    background-color: #8cf;
+    background-color: #A0E0FF;
     position: absolute;
     top: 0;
     left: 0;

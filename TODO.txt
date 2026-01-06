@@ -1,3 +1,6 @@
+Alt select for colors on canvas
+Initial color selector values
+Zooming increments
 Add functionality to save and load colors from the palette
 Design a tool system
 Add undo and redo functionality
