@@ -1,0 +1,42 @@
+import ColorPicker from './color_picker.js';
+export default class EditorCanvas {
+    private width;
+    private height;
+    private originX;
+    private originY;
+    private scale;
+    private spaceKeyPressed;
+    private mouseX;
+    private mouseY;
+    private leftMouseButtonDown;
+    private rightMouseButtonDown;
+    private colorPicker;
+    private offscreenCanvas;
+    private displayCanvas;
+    private displayCtx;
+    private offscreenCtx;
+    private mousePositionContainer;
+    private layers;
+    constructor(colorPicker: ColorPicker);
+    private addEventListeners;
+    private handlePointerDown;
+    private drawPixelAtMousePosition;
+    private handlePointerMove;
+    private handlePointerUp;
+    private handlePointerLeave;
+    private handleWindowMouseLeave;
+    private handleWindowBlur;
+    private handleKeyDown;
+    private handleKeyUp;
+    private updateCanvasSize;
+    private handleResize;
+    private handleWheel;
+    private zoomTo;
+    private displayToBitmapX;
+    private displayToBitmapY;
+    private handleGlobalMouseMove;
+    private displayMousePosition;
+    private displayMousePositionWithCoords;
+    private render;
+}
+//# sourceMappingURL=editor_canvas.d.ts.map

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixels</title>
+    <link rel="stylesheet" href="./index.css">
+    <script src="./dist/index.js" type="module"></script>
+</head>
+<body>
+    <div>
+        <div class="container">
+            <div class="container-title">Menu</div>
+        </div>
+        <div class="container">
+            <div class="container-title">Tabs</div>
+        </div>
+    </div>
+    <main> 
+        <canvas id="editor-canvas"></canvas>
+        <div id="main-overlay">
+            <div id="middle">
+                <div id="left">
+                    <div id="left-content">
+                        <div id="swatches-container" class="container expanded">
+                            <div class="container-title">
+                                Palette
+                                <img class="container-title-icon" src="./res/icons/keyboard_arrow_down.svg" alt="Expand">
+                            </div>
+                            <div class="container-content">
+                                <div id="swatch-grid">
+                                    <div class="swatch" style="background-color: #000;"></div>
+                                    <div class="swatch" style="background-color: #fff;"></div>
+                                    <div class="swatch" style="background-color: #f00;"></div>
+                                    <div class="swatch" style="background-color: #f80;"></div>
+                                    <div class="swatch" style="background-color: #ff0;"></div>
+                                    <div class="swatch" style="background-color: #0f0;"></div>
+                                    <div class="swatch" style="background-color: #0ff;"></div>
+                                    <div class="swatch" style="background-color: #00f;"></div>
+                                    <div class="swatch" style="background-color: #80f;"></div>
+                                    <div class="swatch" style="background-color: #f0f;"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                    <div class="swatch"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="container expanded">
+                            <div class="container-title">
+                                Colors
+                                <img class="container-title-icon" src="./res/icons/keyboard_arrow_down.svg" alt="Expand">
+                            </div>
+                            <div class="container-content">
+                                <div id="color-selection-container">
+                                    <img id="add-primary-icon" class="add-color-icon" src="./res/icons/arrow_upward_alt.svg" alt="Add Primary">
+                                    <div id="primary-selector-wrapper" class="color-selector-wrapper active">
+                                        <div id="primary-selector-background" class="color-selector-background"></div>
+                                        <div id="primary-selector" class="color-selector">Primary</div>
+                                        <div id="primary-selector-indicator" class="color-selector-indicator"></div>
+                                    </div>
+                                    <img id="add-secondary-icon" class="add-color-icon" src="./res/icons/arrow_upward_alt.svg" alt="Add Secondary">
+                                    <div id="secondary-selector-wrapper" class="color-selector-wrapper">
+                                        <div id="secondary-selector-background" class="color-selector-background"></div>
+                                        <div id="secondary-selector" class="color-selector">Secondary</div>
+                                        <div id="secondary-selector-indicator" class="color-selector-indicator"></div>
+                                    </div>
+                                </div>
+                                <div id="color-picker-canvas-wrapper">
+                                    <div id="color-picker-canvas-container">
+                                        <canvas id="color-picker-canvas"></canvas>
+                                        <div id="palette-selector"></div>
+                                    </div>
+                                </div>
+                                <div id="color-inputs-container">
+                                    <input type="range" min="0" max="360" value="0" step="1" id="hue-slider">
+
+                                    <div class="color-input-container">
+                                        <input class="color-slider" id="opacity-slider" type="range" min="0" max="255" value="255" step="1">
+                                        <input class="color-input" type="text" value="255" id="opacity-input" autocomplete="off">
+                                    </div>
+                                    
+                                    <div class="color-input-container">
+                                        <input class="color-slider" type="range" min="0" max="255" value="0" id="red-slider">
+                                        <input class="color-input" type="text" value="0" id="red-input" autocomplete="off">
+                                    </div>
+
+                                    <div class="color-input-container">
+                                        <input class="color-slider" type="range" min="0" max="255" value="0" id="green-slider">
+                                        <input class="color-input" type="text" value="0" id="green-input" autocomplete="off">
+                                    </div>
+
+                                    <div class="color-input-container">
+                                        <input class="color-slider" type="range" min="0" max="255" value="0" id="blue-slider">
+                                        <input class="color-input" type="text" value="0" id="blue-input" autocomplete="off">
+                                    </div>
+
+                                    <div id="hex-input-container">
+                                        <span>#</span>
+                                        <input id="hex-input" type="text" value="000000" autocomplete="off">
+                                        <img id="hex-copy-icon" src="./res/icons/content_copy.svg" alt="Copy">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="center"></div>
+                <div id="right">
+                    <div id="right-content">
+                        <div class="container expanded">
+                            <div class="container-title">
+                                Tools
+                                <img class="container-title-icon" src="./res/icons/keyboard_arrow_down.svg" alt="Expand">
+                            </div>
+                            <div class="container-content">
+                                <div id="tools-grid">
+                                    <div id="select-tool-button" class="tool-button selected">
+                                        <img src="./res/icons/select.svg" alt="Select">
+                                    </div>
+                                    <div id="pencil-tool-button" class="tool-button">
+                                        <img src="./res/icons/draw.svg" alt="Pencil">
+                                    </div>
+                                    <div id="fill-tool-button" class="tool-button">
+                                        <img src="./res/icons/format_color_fill.svg" alt="Fill">
+                                    </div>
+                                    <div id="line-tool-button" class="tool-button">
+                                        <img src="./res/icons/diagonal_line.svg" alt="Line">
+                                    </div>
+                                    <div id="rectangle-tool-button" class="tool-button">
+                                        <img src="./res/icons/square.svg" alt="Rectangle">
+                                    </div>
+                                    <div id="ellipse-tool-button" class="tool-button">
+                                        <img src="./res/icons/circle.svg" alt="Ellipse">
+                                    </div>
+                                    <div class="tool-button"></div>
+                                    <div class="tool-button"></div>
+                                    <div class="tool-button"></div>
+                                    <div class="tool-button"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="container">
+                            <div class="container-title">
+                                Tool Settings
+                                <img class="container-title-icon" src="./res/icons/keyboard_arrow_down.svg" alt="Expand">
+                            </div>
+                        </div>
+                        <div class="container">
+                            <div class="container-title">
+                                Layers
+                                <img class="container-title-icon" src="./res/icons/keyboard_arrow_down.svg" alt="Expand">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="bottom" class="container">
+                <div class="container-title"></div>
+                <div id="mouse-position-container">x: 0, y: 0</div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
