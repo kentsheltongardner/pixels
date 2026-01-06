@@ -318,6 +318,7 @@ canvas {
     transform: translate(-50%, -50%);
     box-shadow: 0 0 2px #fff8 inset;
     cursor: pointer;
+    pointer-events: none;
 }
 
 
@@ -403,11 +404,11 @@ canvas {
     width: 4px;
     height: 4px;
     border-radius: 2px;
-    background-color: transparent;
     transition: background-color 0.5s ease;
+    opacity: 0;
 }
-.color-selector.active .color-selector-indicator {
-    background-color: white;
+.color-selector-indicator.active {
+    opacity: 1;
 }
 
 .add-color-icon {

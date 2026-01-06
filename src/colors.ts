@@ -6,7 +6,7 @@ export interface RGBColor {
 }
 
 export interface HSVColor {
-    h: number // 0-HUE_MAX
+    h: number // 0-1
     s: number // 0-1
     v: number // 0-1
     a: number // 0-1

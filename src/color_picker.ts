@@ -2,17 +2,14 @@ import type { RGBColor, HSVColor } from './colors.js'
 import type Palette from './palette.js'
 
 export default class ColorPicker {
-    // ============================================================================
-    // Color State
-    // ============================================================================
-    public primaryColor: RGBColor = { r: 0, g: 0, b: 0, a: 255 }
-    public secondaryColor: RGBColor = { r: 0, g: 0, b: 0, a: 255 }
-    private activeColor: RGBColor = this.primaryColor
-    private currentHue: number = 0
+    private palette: Palette
 
-    // ============================================================================
-    // DOM Element References
-    // ============================================================================
+    // Colors
+    public primaryColor: RGBColor = { r: 0, g: 0, b: 0, a: 255 }
+    public secondaryColor: RGBColor = { r: 255, g: 255, b: 255, a: 255 }
+    private activeColor: RGBColor = this.primaryColor
+
+    // DOM elements
     private primarySelector: HTMLDivElement
     private secondarySelector: HTMLDivElement
     private primaryIndicator: HTMLDivElement
@@ -32,54 +29,42 @@ export default class ColorPicker {
     private hueSlider: HTMLInputElement
     private paletteSelector: HTMLDivElement
 
-    // ============================================================================
-    // Drag State
-    // ============================================================================
-    private isDraggingPalette: boolean = false
-    private documentPaletteMouseMoveHandler: ((e: MouseEvent) => void) | null = null
-    private documentPaletteMouseUpHandler: (() => void) | null = null
-
-    private palette: Palette
+    private colorPickerDragging: boolean
 
     constructor(palette: Palette) {
-        this.palette = palette
+        this.palette                  = palette
+        this.primarySelector          = document.getElementById('primary-selector') as HTMLDivElement
+        this.secondarySelector        = document.getElementById('secondary-selector') as HTMLDivElement
+        this.primaryIndicator         = document.getElementById('primary-selector-indicator') as HTMLDivElement
+        this.secondaryIndicator       = document.getElementById('secondary-selector-indicator') as HTMLDivElement
+        this.sliderR                  = document.getElementById('red-slider') as HTMLInputElement
+        this.sliderG                  = document.getElementById('green-slider') as HTMLInputElement
+        this.sliderB                  = document.getElementById('blue-slider') as HTMLInputElement
+        this.sliderA                  = document.getElementById('opacity-slider') as HTMLInputElement
+        this.inputR                   = document.getElementById('red-input') as HTMLInputElement
+        this.inputG                   = document.getElementById('green-input') as HTMLInputElement
+        this.inputB                   = document.getElementById('blue-input') as HTMLInputElement
+        this.inputA                   = document.getElementById('opacity-input') as HTMLInputElement
+        this.hexInput                 = document.getElementById('hex-input') as HTMLInputElement
+        this.hexCopyIcon              = document.getElementById('hex-copy-icon') as HTMLImageElement
+        this.colorPickerCanvas        = document.getElementById('color-picker-canvas') as HTMLCanvasElement
+        this.hueSlider                = document.getElementById('hue-slider') as HTMLInputElement
+        this.paletteSelector          = document.getElementById('palette-selector') as HTMLDivElement
 
-        // Initialize DOM element references
-        this.primarySelector    = document.getElementById('primary-selector') as HTMLDivElement
-        this.secondarySelector  = document.getElementById('secondary-selector') as HTMLDivElement
-        this.primaryIndicator   = document.getElementById('primary-selector-indicator') as HTMLDivElement
-        this.secondaryIndicator = document.getElementById('secondary-selector-indicator') as HTMLDivElement
-        this.sliderR            = document.getElementById('red-slider') as HTMLInputElement
-        this.sliderG            = document.getElementById('green-slider') as HTMLInputElement
-        this.sliderB            = document.getElementById('blue-slider') as HTMLInputElement
-        this.sliderA            = document.getElementById('opacity-slider') as HTMLInputElement
-        this.inputR             = document.getElementById('red-input') as HTMLInputElement
-        this.inputG             = document.getElementById('green-input') as HTMLInputElement
-        this.inputB             = document.getElementById('blue-input') as HTMLInputElement
-        this.inputA             = document.getElementById('opacity-input') as HTMLInputElement
-        this.hexInput           = document.getElementById('hex-input') as HTMLInputElement
-        this.hexCopyIcon        = document.getElementById('hex-copy-icon') as HTMLImageElement
-        this.colorPickerCanvas  = document.getElementById('color-picker-canvas') as HTMLCanvasElement
-        this.hueSlider          = document.getElementById('hue-slider') as HTMLInputElement
-        this.paletteSelector    = document.getElementById('palette-selector') as HTMLDivElement
+        this.colorPickerCtx           = this.colorPickerCanvas.getContext('2d') as CanvasRenderingContext2D
 
-        this.colorPickerCtx     = this.colorPickerCanvas.getContext('2d') as CanvasRenderingContext2D
+        this.colorPickerDragging      = false
 
-        // Setup event listeners
         this.addEventListeners()
-
-        // Initialize UI
-        this.resetCanvases()
+        this.resetColorPickerCanvas()
         this.updateUI()
-
-        // Setup resize observers
         this.setupResizeObservers()
     }
 
-    // ============================================================================
-    // Color Conversion Utilities
-    // ============================================================================
+    // Color conversion
 
+    // Adapted from Foley and van Dam algorithm
+    // https://en.wikipedia.org/wiki/HSL_and_HSV#From_RGB
     private rgbToHSV(r: number, g: number, b: number, a: number): HSVColor {
         r /= 255
         g /= 255
@@ -104,6 +89,8 @@ export default class ColorPicker {
         return { h, s, v, a }
     }
 
+    // Adapted from Foley and van Dam algorithm
+    // https://en.wikipedia.org/wiki/HSL_and_HSV#From_HSV
     private hsvToRGB(h: number, s: number, v: number): RGBColor {
         const i = Math.floor(h * 6)
         const f = h * 6 - i
@@ -147,10 +134,7 @@ export default class ColorPicker {
         return `rgb(${color.r}, ${color.g}, ${color.b})`
     }
 
-    // ============================================================================
-    // Color State Management
-    // ============================================================================
-
+    // Color state
     private getCurrentHSV(): HSVColor {
         const r = this.activeColor.r
         const g = this.activeColor.g
@@ -159,79 +143,48 @@ export default class ColorPicker {
         return this.rgbToHSV(r, g, b, a)
     }
 
-    private updateHueAndPaletteFromRGB(): void {
-        const r   = this.activeColor.r
-        const g   = this.activeColor.g
-        const b   = this.activeColor.b
-        const a   = this.activeColor.a
-        const hsv = this.rgbToHSV(r, g, b, a)
-        if (hsv.s > 0) {
-            this.currentHue = hsv.h
-        }
-    }
-
-    // ============================================================================
-    // UI Update Methods
-    // ============================================================================
-
+    // UI update
     private updateUI(updateCanvases: boolean = true): void {
-        // Update hue and palette positions from current RGB (only if not from canvas selection)
-        if (updateCanvases) {
-            this.updateHueAndPaletteFromRGB()
-        }
-
         const r = this.activeColor.r.toString()
         const g = this.activeColor.g.toString()
         const b = this.activeColor.b.toString()
         const a = this.activeColor.a.toString()
 
-        this.inputR.value   = r
-        this.inputG.value   = g
-        this.inputB.value   = b
-        this.inputA.value   = a
-        this.sliderR.value  = r
-        this.sliderG.value  = g
-        this.sliderB.value  = b
-        this.sliderA.value  = a
+        this.inputR.value = this.sliderR.value = r
+        this.inputG.value = this.sliderG.value = g
+        this.inputB.value = this.sliderB.value = b
+        this.inputA.value = this.sliderA.value = a
+        
         this.hexInput.value = this.rgbToHex(r, g, b)
         
-        // Only update canvases and selector positions if requested (skip when update comes from canvas selection)
         if (updateCanvases) {
+            this.updateHueSliderValue()
             this.updateColorPickerCanvas()
             this.updatePaletteSelectorPosition()
-            this.updateHueSliderValue()
         }
         
-        // Always update color swatches and opacity slider gradient
-        this.updateColorSwatches()
+        this.updateColorSelectors()
         this.updateOpacitySliderGradient()
     }
 
-    private updateColorSwatches(): void {
-        this.primarySelector.style.backgroundColor   = this.rgbToCSSColor(this.primaryColor)
-        this.secondarySelector.style.backgroundColor = this.rgbToCSSColor(this.secondaryColor)
-        
-        // Update text color for active selector (indicators updated only when switching active color)
-        if (this.activeColor === this.primaryColor) {
-            const color = this.primaryColor.r > 128 ? '#000' : '#fff'
-            this.primarySelector.style.color = color
-            this.primaryIndicator.style.backgroundColor = color
-        } else if (this.activeColor === this.secondaryColor) {
-            const color = this.secondaryColor.r > 128 ? '#000' : '#fff'
-            this.secondarySelector.style.color = color
-            this.secondaryIndicator.style.backgroundColor = color
-        }
+    private updateColorSelector(selector: HTMLDivElement, indicator: HTMLDivElement, color: RGBColor): void {
+        selector.style.backgroundColor  = this.rgbToCSSColor(color)
+        const contrastColor             = color.r > 128 ? '#000' : '#fff'
+        selector.style.color            = contrastColor
+        indicator.style.backgroundColor = contrastColor
+    }
+
+    private updateColorSelectors(): void {
+        this.updateColorSelector(this.primarySelector, this.primaryIndicator, this.primaryColor)
+        this.updateColorSelector(this.secondarySelector, this.secondaryIndicator, this.secondaryColor)
     }
 
     private updateOpacitySliderGradient(): void {
-        const r = this.activeColor.r
-        const g = this.activeColor.g
-        const b = this.activeColor.b
-        const gradient = `linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0), rgba(${r}, ${g}, ${b}, 1)), var(--checkered-background)`
-        
-        // Apply to all vendor-specific pseudo-elements using a style element
+        const r       = this.activeColor.r
+        const g       = this.activeColor.g
+        const b       = this.activeColor.b
         const styleId = 'opacity-slider-gradient-style'
-        let style = document.getElementById(styleId) as HTMLStyleElement
+        let style     = document.getElementById(styleId) as HTMLStyleElement
         
         if (!style) {
             style = document.createElement('style')
@@ -239,58 +192,40 @@ export default class ColorPicker {
             document.head.appendChild(style)
         }
         
+        const attributes = `
+            background: linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0), rgba(${r}, ${g}, ${b}, 1)), var(--checkered-background);
+            background-position: var(--opacity-slider-background-position);
+            background-size: var(--opacity-slider-background-size);
+            background-repeat: var(--opacity-slider-background-repeat);
+        `
+
         style.textContent = `
-            #opacity-slider::-webkit-slider-runnable-track {
-                background: linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0), rgba(${r}, ${g}, ${b}, 1)), var(--checkered-background);
-                background-position: var(--opacity-slider-background-position);
-                background-size: var(--opacity-slider-background-size);
-                background-repeat: var(--opacity-slider-background-repeat);
-            }
-            #opacity-slider::-moz-range-track {
-                background: linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0), rgba(${r}, ${g}, ${b}, 1)), var(--checkered-background);
-                background-position: var(--opacity-slider-background-position);
-                background-size: var(--opacity-slider-background-size);
-                background-repeat: var(--opacity-slider-background-repeat);
-            }
-            #opacity-slider::-ms-track {
-                background: linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0), rgba(${r}, ${g}, ${b}, 1)), var(--checkered-background);
-                background-position: var(--opacity-slider-background-position);
-                background-size: var(--opacity-slider-background-size);
-                background-repeat: var(--opacity-slider-background-repeat);
-            }
+            #opacity-slider::-webkit-slider-runnable-track {${attributes}}
+            #opacity-slider::-moz-range-track {${attributes}}
+            #opacity-slider::-ms-track {${attributes}}
         `
     }
 
-    // ============================================================================
-    // Canvas Rendering
-    // ============================================================================
-
-    private resetCanvases(): void {
+    
+    private resetColorPickerCanvas(): void {
         this.colorPickerCanvas.width  = this.colorPickerCanvas.offsetWidth
         this.colorPickerCanvas.height = this.colorPickerCanvas.offsetHeight
     }
 
     private updateColorPickerCanvas(): void {
-        // Ensure canvas is properly sized
-        if (this.colorPickerCanvas.width === 0 || this.colorPickerCanvas.height === 0) {
-            this.resetCanvases()
-        }
-        
-        const width     = this.colorPickerCanvas.width
-        const height    = this.colorPickerCanvas.height
-        
-        if (width === 0 || height === 0) {
-            return
-        }
-        
-        const imageData = this.colorPickerCtx.createImageData(width, height)
-        const data      = imageData.data
+        const width      = this.colorPickerCanvas.width
+        const height     = this.colorPickerCanvas.height
+        const imageData  = this.colorPickerCtx.createImageData(width, height)
+        const data       = imageData.data
+        const max        = parseInt(this.hueSlider.max)
+        const hueDegrees = parseInt(this.hueSlider.value)
+        const currentHue = hueDegrees / max
 
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
                 const saturation = x / width
                 const value      = 1 - (y / height)
-                const color      = this.hsvToRGB(this.currentHue, saturation, value)
+                const color      = this.hsvToRGB(currentHue, saturation, value)
                 const index      = (y * width + x) * 4
                 data[index]      = color.r
                 data[index + 1]  = color.g
@@ -303,66 +238,48 @@ export default class ColorPicker {
     }
 
     private updateHueSliderValue(): void {
-        // Convert hue from 0-1 range to 0-360 degrees for the slider
-        this.hueSlider.value = Math.round(this.currentHue * 360).toString()
+        const max            = parseInt(this.hueSlider.max)
+        const currentHue     = this.getCurrentHSV().h
+        this.hueSlider.value = Math.round(currentHue * max).toString()
     }
 
     private updatePaletteSelectorPosition(): void {
-        const hsv = this.getCurrentHSV()
-        const rect = this.colorPickerCanvas.getBoundingClientRect()
-        const x = hsv.s * rect.width
-        const y = (1 - hsv.v) * rect.height
-        this.paletteSelector.style.left = `${x}px`
-        this.paletteSelector.style.top = `${y}px`
-        this.paletteSelector.style.boxShadow = hsv.v > 0.5 ? '0 0 2px #0008 inset' : '0 0 2px #fff8 inset'
+        const hsv                                  = this.getCurrentHSV()
+        const rect                                 = this.colorPickerCanvas.getBoundingClientRect()
+        const x                                    = hsv.s * rect.width
+        const y                                    = (1 - hsv.v) * rect.height
+        this.paletteSelector.style.left            = `${x}px`
+        this.paletteSelector.style.top             = `${y}px`
+        this.paletteSelector.style.boxShadow       = hsv.v > 0.5 ? '0 0 2px #0008 inset' : '0 0 2px #fff8 inset'
         this.paletteSelector.style.backgroundColor = this.rgbToCSSColorOpaque(this.activeColor)
     }
 
+    private clamp(value: number, min: number, max: number): number {
+        return Math.max(min, Math.min(max, value))
+    }
 
-    // ============================================================================
-    // Input Handlers
-    // ============================================================================
-
-    private handleRGBInput(input: HTMLInputElement): void {
+    // Input handlers
+    private handleChannelInput(input: HTMLInputElement): void {
         if (input.value === '') return
 
         input.value = input.value.replace(/[^0-9]/g, '')
         const value = parseInt(input.value)
-        
-        if (value < 0) {
-            input.value = '0'
-        } else if (value > 255) {
-            input.value = '255'
-        }
+        input.value = this.clamp(value, 0, 255).toString()
     }
 
-    private handleInputRSubmit(): void {
-        if (this.inputR.value !== '') {
-            this.activeColor.r = parseInt(this.inputR.value)
+    private handleChannelInputSubmit(input: HTMLInputElement, channel: 'r' | 'g' | 'b' | 'a'): void {
+        if (input.value !== '') {
+            this.activeColor[channel] = parseInt(input.value, 10)
         }
         this.updateUI()
     }
 
-    private handleInputGSubmit(): void {
-        if (this.inputG.value !== '') {
-            this.activeColor.g = parseInt(this.inputG.value)
-        }
+    private handleChannelSliderInput(slider: HTMLInputElement, channel: 'r' | 'g' | 'b' | 'a'): void {
+        this.activeColor[channel] = this.clamp(parseInt(slider.value), 0, 255)
         this.updateUI()
     }
 
-    private handleInputBSubmit(): void {
-        if (this.inputB.value !== '') {
-            this.activeColor.b = parseInt(this.inputB.value)
-        }
-        this.updateUI()
-    }
 
-    private handleInputASubmit(): void {
-        if (this.inputA.value !== '') {
-            this.activeColor.a = parseInt(this.inputA.value)
-        }
-        this.updateUI()
-    }
 
     private handleHexInput(): void {
         if (this.hexInput.value.length > 6) {
@@ -389,51 +306,26 @@ export default class ColorPicker {
         navigator.clipboard.writeText('#' + this.hexInput.value)
     }
 
-    // ============================================================================
-    // Color Selection
-    // ============================================================================
-
     private selectPrimaryColor(): void {
-        this.primarySelector.classList.add('active')
-        this.secondarySelector.classList.remove('active')
+        this.primaryIndicator.classList.add('active')
+        this.secondaryIndicator.classList.remove('active')
         this.activeColor = this.primaryColor
-        // Update indicators when switching active color (not on every color update)
-        if (this.primaryIndicator) {
-            const color = this.primaryColor.r > 128 ? '#000' : '#fff'
-            this.primaryIndicator.style.backgroundColor = color
-        }
-        if (this.secondaryIndicator) {
-            this.secondaryIndicator.style.backgroundColor = 'transparent'
-        }
         this.updateUI()
     }
 
     private selectSecondaryColor(): void {
-        this.primarySelector.classList.remove('active')
-        this.secondarySelector.classList.add('active')
+        this.primaryIndicator.classList.remove('active')
+        this.secondaryIndicator.classList.add('active')
         this.activeColor = this.secondaryColor
-        // Update indicators when switching active color (not on every color update)
-        if (this.secondaryIndicator) {
-            const color = this.secondaryColor.r > 128 ? '#000' : '#fff'
-            this.secondaryIndicator.style.backgroundColor = color
-        }
-        if (this.primaryIndicator) {
-            this.primaryIndicator.style.backgroundColor = 'transparent'
-        }
         this.updateUI()
     }
 
-    // ============================================================================
-    // Hue Slider Handler
-    // ============================================================================
-
-    private handleHueSlider(): void {
-        // Convert slider value (0-360) to hue (0-1)
-        const hueDegrees = parseInt(this.hueSlider.value)
-        this.currentHue = hueDegrees / 360
-        
-        const hsv = this.getCurrentHSV()
-        const rgb = this.hsvToRGB(this.currentHue, hsv.s, hsv.v)
+    private handleHueSliderInput(): void {
+        const max          = parseInt(this.hueSlider.max)
+        const hueDegrees   = parseInt(this.hueSlider.value)
+        const currentHue   = hueDegrees / max
+        const hsv          = this.getCurrentHSV()
+        const rgb          = this.hsvToRGB(currentHue, hsv.s, hsv.v)
         this.activeColor.r = rgb.r
         this.activeColor.g = rgb.g
         this.activeColor.b = rgb.b
@@ -442,10 +334,6 @@ export default class ColorPicker {
         this.updateColorPickerCanvas()
         this.updatePaletteSelectorPosition()
     }
-
-    // ============================================================================
-    // Canvas Interaction - Palette
-    // ============================================================================
 
     private updatePaletteFromPosition(clientX: number, clientY: number): void {
         const rect                                 = this.colorPickerCanvas.getBoundingClientRect()
@@ -458,7 +346,10 @@ export default class ColorPicker {
         const saturation                           = Math.max(0, Math.min(1, clampedX / rect.width))
         const value                                = Math.max(0, Math.min(1, 1 - (clampedY / rect.height)))
         this.paletteSelector.style.boxShadow       = value > 0.5 ? '0 0 2px #0008 inset' : '0 0 2px #fff8 inset'
-        const rgb                                  = this.hsvToRGB(this.currentHue, saturation, value)
+        const max                                  = parseInt(this.hueSlider.max)
+        const hueDegrees                           = parseInt(this.hueSlider.value)
+        const currentHue                           = hueDegrees / max
+        const rgb                                  = this.hsvToRGB(currentHue, saturation, value)
         this.activeColor.r                         = rgb.r
         this.activeColor.g                         = rgb.g
         this.activeColor.b                         = rgb.b
@@ -466,125 +357,67 @@ export default class ColorPicker {
         this.updateUI(false)
     }
 
-
-    private startPaletteDrag(e: MouseEvent): void {
-        e.preventDefault()
-        this.isDraggingPalette = true
-        
-        this.documentPaletteMouseMoveHandler = (e: MouseEvent) => {
-            if (this.isDraggingPalette) {
-                // Only update the currently active color
-                this.updatePaletteFromPosition(e.clientX, e.clientY)
-            }
-        }
-        
-        this.documentPaletteMouseUpHandler = () => {
-            this.stopPaletteDrag()
-        }
-        
-        document.addEventListener('mousemove', this.documentPaletteMouseMoveHandler)
-        document.addEventListener('mouseup', this.documentPaletteMouseUpHandler)
+    private handleColorPickerPointerDown(e: PointerEvent): void {
+        this.colorPickerCanvas.setPointerCapture(e.pointerId)
+        this.updatePaletteFromPosition(e.clientX, e.clientY)
+        this.colorPickerDragging = true
     }
 
-    private stopPaletteDrag(): void {
-        this.isDraggingPalette = false
-        
-        if (this.documentPaletteMouseMoveHandler) {
-            document.removeEventListener('mousemove', this.documentPaletteMouseMoveHandler)
-            this.documentPaletteMouseMoveHandler = null
-        }
-        
-        if (this.documentPaletteMouseUpHandler) {
-            document.removeEventListener('mouseup', this.documentPaletteMouseUpHandler)
-            this.documentPaletteMouseUpHandler = null
+    private handleColorPickerPointerMove(e: PointerEvent): void {
+        if (this.colorPickerDragging) {
+            this.updatePaletteFromPosition(e.clientX, e.clientY)
         }
     }
 
-    // ============================================================================
-    // Event Listener Setup
-    // ============================================================================
+    private handleColorPickerPointerUp(e: PointerEvent): void {
+        this.colorPickerCanvas.releasePointerCapture(e.pointerId)
+        this.colorPickerDragging = false
+    }
 
     private addEventListeners(): void {
-        // Slider updates
-        this.sliderR.addEventListener('input', () => {
-            this.activeColor.r = parseInt(this.sliderR.value)
-            this.updateUI()
-        })
-        this.sliderG.addEventListener('input', () => {
-            this.activeColor.g = parseInt(this.sliderG.value)
-            this.updateUI()
-        })
-        this.sliderB.addEventListener('input', () => {
-            this.activeColor.b = parseInt(this.sliderB.value)
-            this.updateUI()
-        })
-        this.sliderA.addEventListener('input', () => {
-            this.activeColor.a = parseInt(this.sliderA.value)
-            this.updateUI()
+        this.sliderR.addEventListener('input', () => this.handleChannelSliderInput(this.sliderR, 'r'))
+        this.sliderG.addEventListener('input', () => this.handleChannelSliderInput(this.sliderG, 'g'))
+        this.sliderB.addEventListener('input', () => this.handleChannelSliderInput(this.sliderB, 'b'))
+        this.sliderA.addEventListener('input', () => this.handleChannelSliderInput(this.sliderA, 'a'))
+        this.hueSlider.addEventListener('input', () => this.handleHueSliderInput())
+
+        this.inputR.addEventListener('input', () => this.handleChannelInput(this.inputR))
+        this.inputG.addEventListener('input', () => this.handleChannelInput(this.inputG))
+        this.inputB.addEventListener('input', () => this.handleChannelInput(this.inputB))
+        this.inputA.addEventListener('input', () => this.handleChannelInput(this.inputA))
+
+        const channelSubmitEvents = ['change', 'blur'] as const
+        channelSubmitEvents.forEach(event => {
+            this.inputR.addEventListener(event, () => this.handleChannelInputSubmit(this.inputR, 'r'))
+            this.inputG.addEventListener(event, () => this.handleChannelInputSubmit(this.inputG, 'g'))
+            this.inputB.addEventListener(event, () => this.handleChannelInputSubmit(this.inputB, 'b'))
+            this.inputA.addEventListener(event, () => this.handleChannelInputSubmit(this.inputA, 'a'))
         })
 
-        // RGB input handlers
-        this.inputR.addEventListener('input', () => this.handleRGBInput(this.inputR))
-        this.inputG.addEventListener('input', () => this.handleRGBInput(this.inputG))
-        this.inputB.addEventListener('input', () => this.handleRGBInput(this.inputB))
-        this.inputA.addEventListener('input', () => this.handleRGBInput(this.inputA))
-
-        this.inputR.addEventListener('change', () => this.handleInputRSubmit())
-        this.inputG.addEventListener('change', () => this.handleInputGSubmit())
-        this.inputB.addEventListener('change', () => this.handleInputBSubmit())
-        this.inputA.addEventListener('change', () => this.handleInputASubmit())
-
-        this.inputR.addEventListener('blur', () => this.handleInputRSubmit())
-        this.inputG.addEventListener('blur', () => this.handleInputGSubmit())
-        this.inputB.addEventListener('blur', () => this.handleInputBSubmit())
-        this.inputA.addEventListener('blur', () => this.handleInputASubmit())
-
-        // Hex input handlers
         this.hexInput.addEventListener('input', () => this.handleHexInput())
         this.hexInput.addEventListener('change', () => this.handleHexInputSubmit())
         this.hexInput.addEventListener('blur', () => this.handleHexInputSubmit())
 
         this.hexCopyIcon.addEventListener('click', () => this.handleHexCopy())
 
-
         this.primarySelector.addEventListener('click', () => this.selectPrimaryColor())
         this.secondarySelector.addEventListener('click', () => this.selectSecondaryColor())
 
-        // Hue slider
-        this.hueSlider.addEventListener('input', () => this.handleHueSlider())
-
-        // Canvas interactions
-        this.colorPickerCanvas.addEventListener('mousedown', e => {
-            // Only update the currently active color
-            this.updatePaletteFromPosition(e.clientX, e.clientY)
-            this.startPaletteDrag(e)
-        })
+        this.colorPickerCanvas.addEventListener('pointerdown', e => this.handleColorPickerPointerDown(e))
+        this.colorPickerCanvas.addEventListener('pointermove', e => this.handleColorPickerPointerMove(e))
+        this.colorPickerCanvas.addEventListener('pointerup', e => this.handleColorPickerPointerUp(e))
         this.colorPickerCanvas.addEventListener('contextmenu', e => e.preventDefault())
-        this.colorPickerCanvas.addEventListener('click', e => {
-            // Only update the currently active color
-            this.updatePaletteFromPosition(e.clientX, e.clientY)
-        })
-
-        // Palette selector drag handling
-        this.paletteSelector.addEventListener('mousedown', e => {
-            e.preventDefault()
-            e.stopPropagation()
-            // Only update the currently active color
-            this.updatePaletteFromPosition(e.clientX, e.clientY)
-            this.startPaletteDrag(e)
-        })
-        this.paletteSelector.addEventListener('contextmenu', e => e.preventDefault())
     }
 
     private setupResizeObservers(): void {
         window.addEventListener('resize', () => {
-            this.resetCanvases()
+            this.resetColorPickerCanvas()
             this.updateColorPickerCanvas()
             this.updatePaletteSelectorPosition()
         })
 
         const resizeObserver = new ResizeObserver(() => {
-            this.resetCanvases()
+            this.resetColorPickerCanvas()
             this.updateColorPickerCanvas()
             this.updatePaletteSelectorPosition()
         })

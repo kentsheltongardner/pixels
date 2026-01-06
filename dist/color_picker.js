@@ -1,14 +1,10 @@
 export default class ColorPicker {
-    // ============================================================================
-    // Color State
-    // ============================================================================
+    palette;
+    // Colors
     primaryColor = { r: 0, g: 0, b: 0, a: 255 };
-    secondaryColor = { r: 0, g: 0, b: 0, a: 255 };
+    secondaryColor = { r: 255, g: 255, b: 255, a: 255 };
     activeColor = this.primaryColor;
-    currentHue = 0;
-    // ============================================================================
-    // DOM Element References
-    // ============================================================================
+    // DOM elements
     primarySelector;
     secondarySelector;
     primaryIndicator;
@@ -27,16 +23,9 @@ export default class ColorPicker {
     colorPickerCtx;
     hueSlider;
     paletteSelector;
-    // ============================================================================
-    // Drag State
-    // ============================================================================
-    isDraggingPalette = false;
-    documentPaletteMouseMoveHandler = null;
-    documentPaletteMouseUpHandler = null;
-    palette;
+    colorPickerDragging;
     constructor(palette) {
         this.palette = palette;
-        // Initialize DOM element references
         this.primarySelector = document.getElementById('primary-selector');
         this.secondarySelector = document.getElementById('secondary-selector');
         this.primaryIndicator = document.getElementById('primary-selector-indicator');
@@ -55,17 +44,15 @@ export default class ColorPicker {
         this.hueSlider = document.getElementById('hue-slider');
         this.paletteSelector = document.getElementById('palette-selector');
         this.colorPickerCtx = this.colorPickerCanvas.getContext('2d');
-        // Setup event listeners
+        this.colorPickerDragging = false;
         this.addEventListeners();
-        // Initialize UI
-        this.resetCanvases();
+        this.resetColorPickerCanvas();
         this.updateUI();
-        // Setup resize observers
         this.setupResizeObservers();
     }
-    // ============================================================================
-    // Color Conversion Utilities
-    // ============================================================================
+    // Color conversion
+    // Adapted from Foley and van Dam algorithm
+    // https://en.wikipedia.org/wiki/HSL_and_HSV#From_RGB
     rgbToHSV(r, g, b, a) {
         r /= 255;
         g /= 255;
@@ -92,6 +79,8 @@ export default class ColorPicker {
         }
         return { h, s, v, a };
     }
+    // Adapted from Foley and van Dam algorithm
+    // https://en.wikipedia.org/wiki/HSL_and_HSV#From_HSV
     hsvToRGB(h, s, v) {
         const i = Math.floor(h * 6);
         const f = h * 6 - i;
@@ -155,9 +144,7 @@ export default class ColorPicker {
     rgbToCSSColorOpaque(color) {
         return `rgb(${color.r}, ${color.g}, ${color.b})`;
     }
-    // ============================================================================
-    // Color State Management
-    // ============================================================================
+    // Color state
     getCurrentHSV() {
         const r = this.activeColor.r;
         const g = this.activeColor.g;
@@ -165,68 +152,39 @@ export default class ColorPicker {
         const a = this.activeColor.a;
         return this.rgbToHSV(r, g, b, a);
     }
-    updateHueAndPaletteFromRGB() {
-        const r = this.activeColor.r;
-        const g = this.activeColor.g;
-        const b = this.activeColor.b;
-        const a = this.activeColor.a;
-        const hsv = this.rgbToHSV(r, g, b, a);
-        if (hsv.s > 0) {
-            this.currentHue = hsv.h;
-        }
-    }
-    // ============================================================================
-    // UI Update Methods
-    // ============================================================================
+    // UI update
     updateUI(updateCanvases = true) {
-        // Update hue and palette positions from current RGB (only if not from canvas selection)
-        if (updateCanvases) {
-            this.updateHueAndPaletteFromRGB();
-        }
         const r = this.activeColor.r.toString();
         const g = this.activeColor.g.toString();
         const b = this.activeColor.b.toString();
         const a = this.activeColor.a.toString();
-        this.inputR.value = r;
-        this.inputG.value = g;
-        this.inputB.value = b;
-        this.inputA.value = a;
-        this.sliderR.value = r;
-        this.sliderG.value = g;
-        this.sliderB.value = b;
-        this.sliderA.value = a;
+        this.inputR.value = this.sliderR.value = r;
+        this.inputG.value = this.sliderG.value = g;
+        this.inputB.value = this.sliderB.value = b;
+        this.inputA.value = this.sliderA.value = a;
         this.hexInput.value = this.rgbToHex(r, g, b);
-        // Only update canvases and selector positions if requested (skip when update comes from canvas selection)
         if (updateCanvases) {
+            this.updateHueSliderValue();
             this.updateColorPickerCanvas();
             this.updatePaletteSelectorPosition();
-            this.updateHueSliderValue();
         }
-        // Always update color swatches and opacity slider gradient
-        this.updateColorSwatches();
+        this.updateColorSelectors();
         this.updateOpacitySliderGradient();
     }
-    updateColorSwatches() {
-        this.primarySelector.style.backgroundColor = this.rgbToCSSColor(this.primaryColor);
-        this.secondarySelector.style.backgroundColor = this.rgbToCSSColor(this.secondaryColor);
-        // Update text color for active selector (indicators updated only when switching active color)
-        if (this.activeColor === this.primaryColor) {
-            const color = this.primaryColor.r > 128 ? '#000' : '#fff';
-            this.primarySelector.style.color = color;
-            this.primaryIndicator.style.backgroundColor = color;
-        }
-        else if (this.activeColor === this.secondaryColor) {
-            const color = this.secondaryColor.r > 128 ? '#000' : '#fff';
-            this.secondarySelector.style.color = color;
-            this.secondaryIndicator.style.backgroundColor = color;
-        }
+    updateColorSelector(selector, indicator, color) {
+        selector.style.backgroundColor = this.rgbToCSSColor(color);
+        const contrastColor = color.r > 128 ? '#000' : '#fff';
+        selector.style.color = contrastColor;
+        indicator.style.backgroundColor = contrastColor;
+    }
+    updateColorSelectors() {
+        this.updateColorSelector(this.primarySelector, this.primaryIndicator, this.primaryColor);
+        this.updateColorSelector(this.secondarySelector, this.secondaryIndicator, this.secondaryColor);
     }
     updateOpacitySliderGradient() {
         const r = this.activeColor.r;
         const g = this.activeColor.g;
         const b = this.activeColor.b;
-        const gradient = `linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0), rgba(${r}, ${g}, ${b}, 1)), var(--checkered-background)`;
-        // Apply to all vendor-specific pseudo-elements using a style element
         const styleId = 'opacity-slider-gradient-style';
         let style = document.getElementById(styleId);
         if (!style) {
@@ -234,51 +192,35 @@ export default class ColorPicker {
             style.id = styleId;
             document.head.appendChild(style);
         }
+        const attributes = `
+            background: linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0), rgba(${r}, ${g}, ${b}, 1)), var(--checkered-background);
+            background-position: var(--opacity-slider-background-position);
+            background-size: var(--opacity-slider-background-size);
+            background-repeat: var(--opacity-slider-background-repeat);
+        `;
         style.textContent = `
-            #opacity-slider::-webkit-slider-runnable-track {
-                background: linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0), rgba(${r}, ${g}, ${b}, 1)), var(--checkered-background);
-                background-position: var(--opacity-slider-background-position);
-                background-size: var(--opacity-slider-background-size);
-                background-repeat: var(--opacity-slider-background-repeat);
-            }
-            #opacity-slider::-moz-range-track {
-                background: linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0), rgba(${r}, ${g}, ${b}, 1)), var(--checkered-background);
-                background-position: var(--opacity-slider-background-position);
-                background-size: var(--opacity-slider-background-size);
-                background-repeat: var(--opacity-slider-background-repeat);
-            }
-            #opacity-slider::-ms-track {
-                background: linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0), rgba(${r}, ${g}, ${b}, 1)), var(--checkered-background);
-                background-position: var(--opacity-slider-background-position);
-                background-size: var(--opacity-slider-background-size);
-                background-repeat: var(--opacity-slider-background-repeat);
-            }
+            #opacity-slider::-webkit-slider-runnable-track {${attributes}}
+            #opacity-slider::-moz-range-track {${attributes}}
+            #opacity-slider::-ms-track {${attributes}}
         `;
     }
-    // ============================================================================
-    // Canvas Rendering
-    // ============================================================================
-    resetCanvases() {
+    resetColorPickerCanvas() {
         this.colorPickerCanvas.width = this.colorPickerCanvas.offsetWidth;
         this.colorPickerCanvas.height = this.colorPickerCanvas.offsetHeight;
     }
     updateColorPickerCanvas() {
-        // Ensure canvas is properly sized
-        if (this.colorPickerCanvas.width === 0 || this.colorPickerCanvas.height === 0) {
-            this.resetCanvases();
-        }
         const width = this.colorPickerCanvas.width;
         const height = this.colorPickerCanvas.height;
-        if (width === 0 || height === 0) {
-            return;
-        }
         const imageData = this.colorPickerCtx.createImageData(width, height);
         const data = imageData.data;
+        const max = parseInt(this.hueSlider.max);
+        const hueDegrees = parseInt(this.hueSlider.value);
+        const currentHue = hueDegrees / max;
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
                 const saturation = x / width;
                 const value = 1 - (y / height);
-                const color = this.hsvToRGB(this.currentHue, saturation, value);
+                const color = this.hsvToRGB(currentHue, saturation, value);
                 const index = (y * width + x) * 4;
                 data[index] = color.r;
                 data[index + 1] = color.g;
@@ -289,8 +231,9 @@ export default class ColorPicker {
         this.colorPickerCtx.putImageData(imageData, 0, 0);
     }
     updateHueSliderValue() {
-        // Convert hue from 0-1 range to 0-360 degrees for the slider
-        this.hueSlider.value = Math.round(this.currentHue * 360).toString();
+        const max = parseInt(this.hueSlider.max);
+        const currentHue = this.getCurrentHSV().h;
+        this.hueSlider.value = Math.round(currentHue * max).toString();
     }
     updatePaletteSelectorPosition() {
         const hsv = this.getCurrentHSV();
@@ -302,43 +245,25 @@ export default class ColorPicker {
         this.paletteSelector.style.boxShadow = hsv.v > 0.5 ? '0 0 2px #0008 inset' : '0 0 2px #fff8 inset';
         this.paletteSelector.style.backgroundColor = this.rgbToCSSColorOpaque(this.activeColor);
     }
-    // ============================================================================
-    // Input Handlers
-    // ============================================================================
-    handleRGBInput(input) {
+    clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+    // Input handlers
+    handleChannelInput(input) {
         if (input.value === '')
             return;
         input.value = input.value.replace(/[^0-9]/g, '');
         const value = parseInt(input.value);
-        if (value < 0) {
-            input.value = '0';
-        }
-        else if (value > 255) {
-            input.value = '255';
-        }
+        input.value = this.clamp(value, 0, 255).toString();
     }
-    handleInputRSubmit() {
-        if (this.inputR.value !== '') {
-            this.activeColor.r = parseInt(this.inputR.value);
+    handleChannelInputSubmit(input, channel) {
+        if (input.value !== '') {
+            this.activeColor[channel] = parseInt(input.value, 10);
         }
         this.updateUI();
     }
-    handleInputGSubmit() {
-        if (this.inputG.value !== '') {
-            this.activeColor.g = parseInt(this.inputG.value);
-        }
-        this.updateUI();
-    }
-    handleInputBSubmit() {
-        if (this.inputB.value !== '') {
-            this.activeColor.b = parseInt(this.inputB.value);
-        }
-        this.updateUI();
-    }
-    handleInputASubmit() {
-        if (this.inputA.value !== '') {
-            this.activeColor.a = parseInt(this.inputA.value);
-        }
+    handleChannelSliderInput(slider, channel) {
+        this.activeColor[channel] = this.clamp(parseInt(slider.value), 0, 255);
         this.updateUI();
     }
     handleHexInput() {
@@ -363,46 +288,24 @@ export default class ColorPicker {
     handleHexCopy() {
         navigator.clipboard.writeText('#' + this.hexInput.value);
     }
-    // ============================================================================
-    // Color Selection
-    // ============================================================================
     selectPrimaryColor() {
-        this.primarySelector.classList.add('active');
-        this.secondarySelector.classList.remove('active');
+        this.primaryIndicator.classList.add('active');
+        this.secondaryIndicator.classList.remove('active');
         this.activeColor = this.primaryColor;
-        // Update indicators when switching active color (not on every color update)
-        if (this.primaryIndicator) {
-            const color = this.primaryColor.r > 128 ? '#000' : '#fff';
-            this.primaryIndicator.style.backgroundColor = color;
-        }
-        if (this.secondaryIndicator) {
-            this.secondaryIndicator.style.backgroundColor = 'transparent';
-        }
         this.updateUI();
     }
     selectSecondaryColor() {
-        this.primarySelector.classList.remove('active');
-        this.secondarySelector.classList.add('active');
+        this.primaryIndicator.classList.remove('active');
+        this.secondaryIndicator.classList.add('active');
         this.activeColor = this.secondaryColor;
-        // Update indicators when switching active color (not on every color update)
-        if (this.secondaryIndicator) {
-            const color = this.secondaryColor.r > 128 ? '#000' : '#fff';
-            this.secondaryIndicator.style.backgroundColor = color;
-        }
-        if (this.primaryIndicator) {
-            this.primaryIndicator.style.backgroundColor = 'transparent';
-        }
         this.updateUI();
     }
-    // ============================================================================
-    // Hue Slider Handler
-    // ============================================================================
-    handleHueSlider() {
-        // Convert slider value (0-360) to hue (0-1)
+    handleHueSliderInput() {
+        const max = parseInt(this.hueSlider.max);
         const hueDegrees = parseInt(this.hueSlider.value);
-        this.currentHue = hueDegrees / 360;
+        const currentHue = hueDegrees / max;
         const hsv = this.getCurrentHSV();
-        const rgb = this.hsvToRGB(this.currentHue, hsv.s, hsv.v);
+        const rgb = this.hsvToRGB(currentHue, hsv.s, hsv.v);
         this.activeColor.r = rgb.r;
         this.activeColor.g = rgb.g;
         this.activeColor.b = rgb.b;
@@ -410,9 +313,6 @@ export default class ColorPicker {
         this.updateColorPickerCanvas();
         this.updatePaletteSelectorPosition();
     }
-    // ============================================================================
-    // Canvas Interaction - Palette
-    // ============================================================================
     updatePaletteFromPosition(clientX, clientY) {
         const rect = this.colorPickerCanvas.getBoundingClientRect();
         const x = clientX - rect.left;
@@ -424,111 +324,66 @@ export default class ColorPicker {
         const saturation = Math.max(0, Math.min(1, clampedX / rect.width));
         const value = Math.max(0, Math.min(1, 1 - (clampedY / rect.height)));
         this.paletteSelector.style.boxShadow = value > 0.5 ? '0 0 2px #0008 inset' : '0 0 2px #fff8 inset';
-        const rgb = this.hsvToRGB(this.currentHue, saturation, value);
+        const max = parseInt(this.hueSlider.max);
+        const hueDegrees = parseInt(this.hueSlider.value);
+        const currentHue = hueDegrees / max;
+        const rgb = this.hsvToRGB(currentHue, saturation, value);
         this.activeColor.r = rgb.r;
         this.activeColor.g = rgb.g;
         this.activeColor.b = rgb.b;
         this.paletteSelector.style.backgroundColor = this.rgbToCSSColorOpaque(rgb);
         this.updateUI(false);
     }
-    startPaletteDrag(e) {
-        e.preventDefault();
-        this.isDraggingPalette = true;
-        this.documentPaletteMouseMoveHandler = (e) => {
-            if (this.isDraggingPalette) {
-                // Only update the currently active color
-                this.updatePaletteFromPosition(e.clientX, e.clientY);
-            }
-        };
-        this.documentPaletteMouseUpHandler = () => {
-            this.stopPaletteDrag();
-        };
-        document.addEventListener('mousemove', this.documentPaletteMouseMoveHandler);
-        document.addEventListener('mouseup', this.documentPaletteMouseUpHandler);
+    handleColorPickerPointerDown(e) {
+        this.colorPickerCanvas.setPointerCapture(e.pointerId);
+        this.updatePaletteFromPosition(e.clientX, e.clientY);
+        this.colorPickerDragging = true;
     }
-    stopPaletteDrag() {
-        this.isDraggingPalette = false;
-        if (this.documentPaletteMouseMoveHandler) {
-            document.removeEventListener('mousemove', this.documentPaletteMouseMoveHandler);
-            this.documentPaletteMouseMoveHandler = null;
-        }
-        if (this.documentPaletteMouseUpHandler) {
-            document.removeEventListener('mouseup', this.documentPaletteMouseUpHandler);
-            this.documentPaletteMouseUpHandler = null;
+    handleColorPickerPointerMove(e) {
+        if (this.colorPickerDragging) {
+            this.updatePaletteFromPosition(e.clientX, e.clientY);
         }
     }
-    // ============================================================================
-    // Event Listener Setup
-    // ============================================================================
+    handleColorPickerPointerUp(e) {
+        this.colorPickerCanvas.releasePointerCapture(e.pointerId);
+        this.colorPickerDragging = false;
+    }
     addEventListeners() {
-        // Slider updates
-        this.sliderR.addEventListener('input', () => {
-            this.activeColor.r = parseInt(this.sliderR.value);
-            this.updateUI();
+        this.sliderR.addEventListener('input', () => this.handleChannelSliderInput(this.sliderR, 'r'));
+        this.sliderG.addEventListener('input', () => this.handleChannelSliderInput(this.sliderG, 'g'));
+        this.sliderB.addEventListener('input', () => this.handleChannelSliderInput(this.sliderB, 'b'));
+        this.sliderA.addEventListener('input', () => this.handleChannelSliderInput(this.sliderA, 'a'));
+        this.hueSlider.addEventListener('input', () => this.handleHueSliderInput());
+        this.inputR.addEventListener('input', () => this.handleChannelInput(this.inputR));
+        this.inputG.addEventListener('input', () => this.handleChannelInput(this.inputG));
+        this.inputB.addEventListener('input', () => this.handleChannelInput(this.inputB));
+        this.inputA.addEventListener('input', () => this.handleChannelInput(this.inputA));
+        const channelSubmitEvents = ['change', 'blur'];
+        channelSubmitEvents.forEach(event => {
+            this.inputR.addEventListener(event, () => this.handleChannelInputSubmit(this.inputR, 'r'));
+            this.inputG.addEventListener(event, () => this.handleChannelInputSubmit(this.inputG, 'g'));
+            this.inputB.addEventListener(event, () => this.handleChannelInputSubmit(this.inputB, 'b'));
+            this.inputA.addEventListener(event, () => this.handleChannelInputSubmit(this.inputA, 'a'));
         });
-        this.sliderG.addEventListener('input', () => {
-            this.activeColor.g = parseInt(this.sliderG.value);
-            this.updateUI();
-        });
-        this.sliderB.addEventListener('input', () => {
-            this.activeColor.b = parseInt(this.sliderB.value);
-            this.updateUI();
-        });
-        this.sliderA.addEventListener('input', () => {
-            this.activeColor.a = parseInt(this.sliderA.value);
-            this.updateUI();
-        });
-        // RGB input handlers
-        this.inputR.addEventListener('input', () => this.handleRGBInput(this.inputR));
-        this.inputG.addEventListener('input', () => this.handleRGBInput(this.inputG));
-        this.inputB.addEventListener('input', () => this.handleRGBInput(this.inputB));
-        this.inputA.addEventListener('input', () => this.handleRGBInput(this.inputA));
-        this.inputR.addEventListener('change', () => this.handleInputRSubmit());
-        this.inputG.addEventListener('change', () => this.handleInputGSubmit());
-        this.inputB.addEventListener('change', () => this.handleInputBSubmit());
-        this.inputA.addEventListener('change', () => this.handleInputASubmit());
-        this.inputR.addEventListener('blur', () => this.handleInputRSubmit());
-        this.inputG.addEventListener('blur', () => this.handleInputGSubmit());
-        this.inputB.addEventListener('blur', () => this.handleInputBSubmit());
-        this.inputA.addEventListener('blur', () => this.handleInputASubmit());
-        // Hex input handlers
         this.hexInput.addEventListener('input', () => this.handleHexInput());
         this.hexInput.addEventListener('change', () => this.handleHexInputSubmit());
         this.hexInput.addEventListener('blur', () => this.handleHexInputSubmit());
         this.hexCopyIcon.addEventListener('click', () => this.handleHexCopy());
         this.primarySelector.addEventListener('click', () => this.selectPrimaryColor());
         this.secondarySelector.addEventListener('click', () => this.selectSecondaryColor());
-        // Hue slider
-        this.hueSlider.addEventListener('input', () => this.handleHueSlider());
-        // Canvas interactions
-        this.colorPickerCanvas.addEventListener('mousedown', e => {
-            // Only update the currently active color
-            this.updatePaletteFromPosition(e.clientX, e.clientY);
-            this.startPaletteDrag(e);
-        });
+        this.colorPickerCanvas.addEventListener('pointerdown', e => this.handleColorPickerPointerDown(e));
+        this.colorPickerCanvas.addEventListener('pointermove', e => this.handleColorPickerPointerMove(e));
+        this.colorPickerCanvas.addEventListener('pointerup', e => this.handleColorPickerPointerUp(e));
         this.colorPickerCanvas.addEventListener('contextmenu', e => e.preventDefault());
-        this.colorPickerCanvas.addEventListener('click', e => {
-            // Only update the currently active color
-            this.updatePaletteFromPosition(e.clientX, e.clientY);
-        });
-        // Palette selector drag handling
-        this.paletteSelector.addEventListener('mousedown', e => {
-            e.preventDefault();
-            e.stopPropagation();
-            // Only update the currently active color
-            this.updatePaletteFromPosition(e.clientX, e.clientY);
-            this.startPaletteDrag(e);
-        });
-        this.paletteSelector.addEventListener('contextmenu', e => e.preventDefault());
     }
     setupResizeObservers() {
         window.addEventListener('resize', () => {
-            this.resetCanvases();
+            this.resetColorPickerCanvas();
             this.updateColorPickerCanvas();
             this.updatePaletteSelectorPosition();
         });
         const resizeObserver = new ResizeObserver(() => {
-            this.resetCanvases();
+            this.resetColorPickerCanvas();
             this.updateColorPickerCanvas();
             this.updatePaletteSelectorPosition();
         });
