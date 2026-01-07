@@ -5,11 +5,12 @@ export default class Layer {
     private imageData;
     private width;
     private height;
-    private ctx;
+    ctx: OffscreenCanvasRenderingContext2D;
     private visible;
     private opacity;
     constructor(width: number, height: number);
     setPixel(x: number, y: number, color: RGBColor): void;
+    getPixel(x: number, y: number): RGBColor;
     runPixelShader(shader: PixelShader): void;
     commitEdits(): void;
 }

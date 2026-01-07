@@ -1,4 +1,4 @@
-import ColorPicker from './color_picker.js';
+import ColorPicker from './managers/color_picker.js';
 export default class EditorCanvas {
     private width;
     private height;
@@ -22,6 +22,7 @@ export default class EditorCanvas {
     constructor(colorPicker: ColorPicker);
     private loadCheckeredBackground;
     private addEventListeners;
+    private selectColor;
     private handlePointerDown;
     private drawPixelAtMousePosition;
     private handlePointerMove;

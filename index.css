@@ -15,10 +15,13 @@
 
     --checkered-background: url('./res/images/checkered_background.png');
 
+    /* 2x2 checkerboard, 8px squares */
+    --checkered-background-size: 16px;
+
     --opacity-slider-background: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 1)),
                                   var(--checkered-background);
     --opacity-slider-background-position: 0 0, center;
-    --opacity-slider-background-size: auto, 16px;
+    --opacity-slider-background-size: auto, var(--checkered-background-size);
     --opacity-slider-background-repeat: no-repeat, repeat;
 
     --red-slider-background: linear-gradient(to right, rgb(0, 0, 0), rgb(255, 0, 0));
@@ -106,7 +109,7 @@ input[type="range"]::-webkit-slider-thumb {
     width: var(--range-slider-thumb-size);
     height: var(--range-slider-thumb-size);
     background: var(--range-slider-thumb-background-color);
-    border: none;
+    border: var(--standard-border-width) solid var(--standard-border-color);
     border-radius: var(--standard-border-radius);
     cursor: pointer;
     margin-top: calc((var(--range-slider-track-height) - var(--range-slider-thumb-size)) / 2);
@@ -116,7 +119,7 @@ input[type="range"]::-moz-range-thumb {
     width: var(--range-slider-thumb-size);
     height: var(--range-slider-thumb-size);
     background: var(--range-slider-thumb-background-color);
-    border: none;
+    border: var(--standard-border-width) solid var(--standard-border-color);
     border-radius: var(--standard-border-radius);
     cursor: pointer;
     margin-top: calc((var(--range-slider-track-height) - var(--range-slider-thumb-size)) / 2);
@@ -395,7 +398,7 @@ canvas {
     background: var(--checkered-background);
     background-repeat: repeat;
     background-position: center;
-    background-size: 16px;
+    background-size: var(--checkered-background-size);
     image-rendering: pixelated;
     z-index: 0;
     pointer-events: none;
@@ -444,7 +447,7 @@ canvas {
 } 
 
 #editor-canvas {
-    background-color: #A0E0FF;
+    background-color: #a0a0a0;
     position: absolute;
     top: 0;
     left: 0;
@@ -469,13 +472,11 @@ canvas {
 .tool-button {
     width: var(--standard-square-button-size);
     height: var(--standard-square-button-size);
-    border: var(--standard-border-width) solid var(--standard-border-color);
     border-radius: var(--standard-border-radius);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #fff8;
     transition: background-color 0.2s;
     padding: 2px;
 }

@@ -1,12 +1,18 @@
-import ColorPicker from './color_picker.js';
-import EditorCanvas from './editor_canvas.js';
-import ToolPicker from './tool_picker.js';
-import Palette from './palette.js';
+import ColorPickerManager from './managers/color_picker_manager.js';
+import ToolManager from './managers/tool_manager.js';
+import PaletteManager from './managers/palette_manager.js';
+import InputManager from './managers/input_manager.js';
+import CanvasManager from './managers/canvas_manager.js';
 document.addEventListener('DOMContentLoaded', () => {
-    const toolPicker = new ToolPicker();
-    const palette = new Palette();
-    const colorPicker = new ColorPicker(palette);
-    const editorCanvas = new EditorCanvas(colorPicker);
+    const paletteManager = new PaletteManager();
+    const colorPickerManager = new ColorPickerManager(paletteManager);
+    const canvasManager = new CanvasManager(colorPickerManager);
+    const toolContext = {
+        canvasManager: canvasManager,
+        colorPickerManager: colorPickerManager
+    };
+    const toolManager = new ToolManager(toolContext);
+    const inputManager = new InputManager(canvasManager, toolManager, colorPickerManager);
     const containers = document.querySelectorAll('.container');
     const updateExpandedHeights = () => {
         for (const container of containers) {

@@ -5,9 +5,11 @@
 // Download the texture back into ImageData (via readPixels or drawImage -> getImageData)
 // Commit back to the 2D canvas for display/compositing
 import Layer from './layer.js';
-import ColorPicker from './color_picker.js';
+import ColorPicker from './managers/color_picker.js';
 const DEFAULT_WIDTH = 256;
 const DEFAULT_HEIGHT = 256;
+const MAX_SCALE = 128;
+const MIN_SCALE = 1 / 4;
 export default class EditorCanvas {
     width;
     height;
@@ -77,7 +79,28 @@ export default class EditorCanvas {
         // Listen for mouse move globally to update position even when over containers
         window.addEventListener('mousemove', e => this.handleGlobalMouseMove(e));
     }
+    selectColor(e) {
+        const x = this.displayToBitmapX(this.mouseX);
+        const y = this.displayToBitmapY(this.mouseY);
+        if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
+            return;
+        }
+        const topLayer = this.layers[this.layers.length - 1];
+        const color = topLayer.getPixel(x, y);
+        if (e.button === 0) {
+            this.colorPicker.primaryColor = color;
+            this.colorPicker.selectPrimaryColor();
+        }
+        else if (e.button === 2) {
+            this.colorPicker.secondaryColor = color;
+            this.colorPicker.selectSecondaryColor();
+        }
+    }
     handlePointerDown(e) {
+        if (e.altKey) {
+            this.selectColor(e);
+            return;
+        }
         // Capture the pointer so we receive all events even if pointer leaves the canvas/browser
         this.displayCanvas.setPointerCapture(e.pointerId);
         if (e.button === 0) {
@@ -202,7 +225,16 @@ export default class EditorCanvas {
         e.preventDefault();
         const oldScale = this.scale;
         const scaleDelta = Math.sign(e.deltaY);
-        const newScale = Math.max(1, this.scale - scaleDelta);
+        if (scaleDelta === 0) {
+            return;
+        }
+        let newScale = oldScale * (scaleDelta === 1 ? 0.5 : 2);
+        if (newScale > MAX_SCALE) {
+            newScale = MAX_SCALE;
+        }
+        else if (newScale < MIN_SCALE) {
+            newScale = MIN_SCALE;
+        }
         if (newScale !== oldScale) {
             this.zoom(newScale);
             this.render();

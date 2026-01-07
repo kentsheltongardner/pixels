@@ -47,8 +47,8 @@ export default class ColorPicker {
     private handleHexInput;
     private handleHexInputSubmit;
     private handleHexCopy;
-    private selectPrimaryColor;
-    private selectSecondaryColor;
+    selectPrimaryColor(): void;
+    selectSecondaryColor(): void;
     private handleHueSliderInput;
     private updatePaletteFromPosition;
     private handleColorPickerPointerDown;

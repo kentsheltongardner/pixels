@@ -1,0 +1,44 @@
+import ColorPicker from './color_picker_manager.js';
+import type ToolManager from './tool_manager.js';
+export default class EditorManager {
+    private width;
+    private height;
+    private originX;
+    private originY;
+    private hasBeenInitialized;
+    private scale;
+    private spaceKeyPressed;
+    private mouseX;
+    private mouseY;
+    private leftMouseButtonDown;
+    private rightMouseButtonDown;
+    private colorPicker;
+    private toolManager;
+    private offscreenCanvas;
+    private displayCanvas;
+    private displayCtx;
+    private offscreenCtx;
+    private mousePositionContainer;
+    private layers;
+    private checkeredBackgroundPattern;
+    constructor(colorPicker: ColorPicker, toolManager: ToolManager);
+    private loadCheckeredBackground;
+    private addEventListeners;
+    private selectColor;
+    private handlePointerDown;
+    private drawPixelAtMousePosition;
+    private handlePointerMove;
+    private handlePointerUp;
+    private handleKeyDown;
+    private handleKeyUp;
+    private updateCanvasSize;
+    private handleResize;
+    private handleWheel;
+    private zoom;
+    private displayToBitmapX;
+    private displayToBitmapY;
+    private displayMousePosition;
+    private displayMousePositionWithCoords;
+    private render;
+}
+//# sourceMappingURL=editor_manager.d.ts.map

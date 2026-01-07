@@ -1,0 +1,1 @@
+{"version":3,"file":"palette_manager.js","sourceRoot":"","sources":["../../src/managers/palette_manager.ts"],"names":[],"mappings":"AAAA;;EAEE;AAEF,MAAM,CAAC,OAAO,OAAO,cAAc;IAEvB,OAAO,CAAgB;IAC/B;QACI,IAAI,CAAC,OAAO,GAAG,QAAQ,CAAC,cAAc,CAAC,SAAS,CAAmB,CAAA;IAEvE,CAAC;CACJ"}

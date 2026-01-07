@@ -6,11 +6,10 @@ export default class Layer {
 
     private imageData: ImageData
 
-
     private width: number
     private height: number
 
-    private ctx: OffscreenCanvasRenderingContext2D
+    public ctx: OffscreenCanvasRenderingContext2D
     private visible: boolean
     private opacity: number
 
@@ -32,6 +31,15 @@ export default class Layer {
         this.imageData.data[y * this.width * 4 + x * 4 + 1] = color.g
         this.imageData.data[y * this.width * 4 + x * 4 + 2] = color.b
         this.imageData.data[y * this.width * 4 + x * 4 + 3] = color.a
+    }
+    getPixel(x: number, y: number): RGBColor {
+        const index = y * this.width * 4 + x * 4
+        return {
+            r: this.imageData.data[index]!,
+            g: this.imageData.data[index + 1]!,
+            b: this.imageData.data[index + 2]!,
+            a: this.imageData.data[index + 3]!
+        }
     }
 
     runPixelShader(shader: PixelShader) {

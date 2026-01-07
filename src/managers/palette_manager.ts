@@ -2,7 +2,7 @@
     
 */
 
-export default class Palette {
+export default class PaletteManager {
 
     private palette: HTMLDivElement
     constructor() {

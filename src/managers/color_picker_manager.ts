@@ -1,8 +1,8 @@
-import type { RGBColor, HSVColor } from './colors.js'
-import type Palette from './palette.js'
+import type { RGBColor, HSVColor } from '../colors.js'
+import type PaletteManager from './palette_manager.js'
 
-export default class ColorPicker {
-    private palette: Palette
+export default class ColorPickerManager {
+    private paletteManager: PaletteManager
 
     // Colors
     public primaryColor: RGBColor = { r: 0, g: 0, b: 0, a: 255 }
@@ -31,8 +31,8 @@ export default class ColorPicker {
 
     private colorPickerDragging: boolean
 
-    constructor(palette: Palette) {
-        this.palette                  = palette
+    constructor(paletteManager: PaletteManager) { 
+        this.paletteManager           = paletteManager
         this.primarySelector          = document.getElementById('primary-selector') as HTMLDivElement
         this.secondarySelector        = document.getElementById('secondary-selector') as HTMLDivElement
         this.primaryIndicator         = document.getElementById('primary-selector-indicator') as HTMLDivElement
@@ -306,14 +306,14 @@ export default class ColorPicker {
         navigator.clipboard.writeText('#' + this.hexInput.value)
     }
 
-    private selectPrimaryColor(): void {
+    public selectPrimaryColor(): void {
         this.primaryIndicator.classList.add('active')
         this.secondaryIndicator.classList.remove('active')
         this.activeColor = this.primaryColor
         this.updateUI()
     }
 
-    private selectSecondaryColor(): void {
+    public selectSecondaryColor(): void {
         this.primaryIndicator.classList.remove('active')
         this.secondaryIndicator.classList.add('active')
         this.activeColor = this.secondaryColor
