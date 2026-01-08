@@ -17,3 +17,24 @@ Initial color selector values
 Bugs
 
 
+
+
+
+
+
+
+
+// When doing shaders, have a triangle that encompasses the entire offscreen canvas to avoid edge artifacts
+
+// Make all changes through ImageData (CPU)
+// When we want to use a shader, upload the ImageData as a texture to a WebGL / OffscreenCanvas WebGL context
+// Run the shader to produce a new texture
+// Download the texture back into ImageData (via readPixels or drawImage -> getImageData)
+// Commit back to the 2D canvas for display/compositing
+
+// Create a working layer on top of the offscreen canvas where we draw to before compositing into the layer
+// This layer will be used to draw the rectangle tool while it's being drawn
+// Fix alt/space bar behavior during existing tool draw
+
+
+

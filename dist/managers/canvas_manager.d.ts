@@ -1,3 +1,4 @@
+import Layer from '../layer.js';
 import ColorPicker from './color_picker_manager.js';
 import type { RGBColor } from '../colors.js';
 export default class CanvasManager {
@@ -5,13 +6,14 @@ export default class CanvasManager {
     private height;
     private originX;
     private originY;
-    private hasBeenInitialized;
     private scale;
     private colorPicker;
-    private offscreenCanvas;
     private displayCanvas;
+    private layersCanvas;
+    private toolCanvas;
     private displayCtx;
-    private offscreenCtx;
+    private layersCtx;
+    toolCtx: OffscreenCanvasRenderingContext2D;
     private mousePositionContainer;
     private layers;
     private checkeredBackgroundPattern;
@@ -20,19 +22,25 @@ export default class CanvasManager {
     getOriginX(): number;
     getOriginY(): number;
     getDisplayCanvas(): HTMLCanvasElement;
+    currentLayer(): Layer;
+    resetToolCanvas(): void;
+    commitToolCanvasToLayer(): void;
     private loadCheckeredBackground;
+    outOfBounds(x: number, y: number): boolean;
     selectColorAtPosition(mouseX: number, mouseY: number, button: number): void;
     drawPixelAtPosition(mouseX: number, mouseY: number, color: RGBColor): void;
+    drawPixelToContext(x: number, y: number, color: RGBColor, ctx: OffscreenCanvasRenderingContext2D): void;
     pan(deltaX: number, deltaY: number): void;
     updateMousePosition(mouseX: number, mouseY: number): void;
     zoomAtPosition(scale: number, mouseX: number, mouseY: number): void;
+    private initializeCanvasSize;
     private updateCanvasSize;
     handleResize(): void;
     getPrimaryColor(): RGBColor;
     getSecondaryColor(): RGBColor;
     displayToBitmapX(displayX: number): number;
     displayToBitmapY(displayY: number): number;
-    drawRectangle(startX: number, startY: number, endX: number, endY: number, color: RGBColor): void;
+    strokeRectangle(startX: number, startY: number, endX: number, endY: number, color: RGBColor, ctx: OffscreenCanvasRenderingContext2D): void;
     private displayMousePositionWithCoords;
     render(): void;
 }

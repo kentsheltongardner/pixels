@@ -41,11 +41,13 @@ export default class InputManager {
         else if (e.button === 2) {
             this.rightMouseButtonDown = true;
         }
-        // If space is pressed with left mouse button, we're panning - don't dispatch to tool
-        if (this.spaceKeyPressed && e.button === 0) {
-            // Capture pointer for panning
+        // If space is pressed with left or right mouse button, we're panning - don't dispatch to tool
+        if (this.spaceKeyPressed && (e.button === 0 || e.button === 2)) {
+            // Capture pointer for panning (only if not already captured and it's a real event)
             const canvas = this.canvasManager.getDisplayCanvas();
-            canvas.setPointerCapture(e.pointerId);
+            if (e.isTrusted !== false && !canvas.hasPointerCapture(e.pointerId)) {
+                canvas.setPointerCapture(e.pointerId);
+            }
             return;
         }
         // Otherwise, dispatch to active tool
@@ -58,11 +60,66 @@ export default class InputManager {
         const movementY = (newMouseY - this.mouseY) / this.canvasManager.getScale();
         this.mouseX = newMouseX;
         this.mouseY = newMouseY;
-        // Handle panning with space + mouse drag
-        if (this.spaceKeyPressed && this.leftMouseButtonDown) {
+        // Detect button state changes from e.buttons (works even when pointerdown doesn't fire)
+        // e.buttons bitmask: 1 = left, 2 = right, 4 = middle
+        const leftPressed = (e.buttons & 1) !== 0;
+        const rightPressed = (e.buttons & 2) !== 0;
+        // Handle panning with space + mouse drag (check this first before creating synthetic events)
+        // Allow panning while tool is drawing - just don't dispatch move events to tool
+        // Support both left and right mouse buttons for panning
+        if (this.spaceKeyPressed && (leftPressed || rightPressed)) {
             this.canvasManager.pan(movementX, movementY);
             this.canvasManager.updateMousePosition(this.mouseX, this.mouseY);
+            // Update button state
+            if (!this.leftMouseButtonDown && leftPressed) {
+                this.leftMouseButtonDown = true;
+            }
+            if (!this.rightMouseButtonDown && rightPressed) {
+                this.rightMouseButtonDown = true;
+            }
+            // Don't dispatch move to tool while panning - tool drawing is paused but not canceled
             return;
+        }
+        // Update button state if buttons were released
+        if (this.leftMouseButtonDown && !leftPressed) {
+            this.leftMouseButtonDown = false;
+        }
+        if (this.rightMouseButtonDown && !rightPressed) {
+            this.rightMouseButtonDown = false;
+        }
+        // If a new button was pressed while another is held, simulate pointerdown
+        // But only if space is not pressed (to avoid conflicts with panning)
+        // IMPORTANT: Only create synthetic events for REAL pointer events, not synthetic ones
+        // Check if this is a real event by verifying it's not a synthetic event we created
+        if (!this.spaceKeyPressed && e.isTrusted !== false) {
+            if (!this.leftMouseButtonDown && leftPressed) {
+                // Update state FIRST to prevent loops
+                this.leftMouseButtonDown = true;
+                // Create synthetic pointerdown event
+                const syntheticEvent = {
+                    ...e,
+                    button: 0,
+                    buttons: e.buttons,
+                    type: 'pointerdown',
+                    isTrusted: false
+                };
+                this.handlePointerDown(syntheticEvent);
+                return; // Return early to avoid dispatching move to tool
+            }
+            if (!this.rightMouseButtonDown && rightPressed) {
+                // Update state FIRST to prevent loops
+                this.rightMouseButtonDown = true;
+                // Create synthetic pointerdown event
+                const syntheticEvent = {
+                    ...e,
+                    button: 2,
+                    buttons: e.buttons,
+                    type: 'pointerdown',
+                    isTrusted: false
+                };
+                this.handlePointerDown(syntheticEvent);
+                return; // Return early to avoid dispatching move to tool
+            }
         }
         // Update mouse position display
         this.canvasManager.updateMousePosition(this.mouseX, this.mouseY);
@@ -83,12 +140,31 @@ export default class InputManager {
     handleKeyDown(e) {
         if (e.code === 'Space') {
             this.spaceKeyPressed = true;
+            // Don't cancel tool drawing - allow panning while drawing
         }
+        this.toolManager.handleKeyDown(e);
     }
     handleKeyUp(e) {
         if (e.code === 'Space') {
             this.spaceKeyPressed = false;
+            // When space is released, update tool's last position to current mouse position
+            // This prevents drawing an unwanted line when resuming drawing after panning
+            // We'll do this by dispatching a move event to the tool with current position
+            if (this.leftMouseButtonDown || this.rightMouseButtonDown) {
+                const canvas = this.canvasManager.getDisplayCanvas();
+                // Create a synthetic move event to update tool's last position
+                // Include shiftKey state so tools can maintain constraints (e.g., square rectangles)
+                const syntheticMoveEvent = {
+                    offsetX: this.mouseX,
+                    offsetY: this.mouseY,
+                    buttons: this.leftMouseButtonDown ? 1 : (this.rightMouseButtonDown ? 2 : 0),
+                    shiftKey: e.shiftKey, // Preserve shift key state
+                    isTrusted: false
+                };
+                this.toolManager.handlePointerMove(syntheticMoveEvent);
+            }
         }
+        this.toolManager.handleKeyUp(e);
     }
     handleWheel(e) {
         e.preventDefault();

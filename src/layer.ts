@@ -3,13 +3,10 @@ import PixelShader from './pixel_shader.js'
 
 export default class Layer {
     public canvas: OffscreenCanvas
-
-    private imageData: ImageData
+    public ctx: OffscreenCanvasRenderingContext2D
 
     private width: number
     private height: number
-
-    public ctx: OffscreenCanvasRenderingContext2D
     private visible: boolean
     private opacity: number
 
@@ -18,35 +15,28 @@ export default class Layer {
         this.opacity   = 1
         this.width     = width
         this.height    = height
-        this.imageData = new ImageData(this.width, this.height)
         this.canvas    = new OffscreenCanvas(this.width, this.height)
-        this.ctx       = this.canvas.getContext('2d') as OffscreenCanvasRenderingContext2D
+        this.ctx       = this.canvas.getContext('2d', { willReadFrequently: true }) as OffscreenCanvasRenderingContext2D
 
-        this.imageData.data.fill(0)
-        this.commitEdits()
+        this.ctx.clearRect(0, 0, this.width, this.height)
     }
 
     setPixel(x: number, y: number, color: RGBColor) {
-        this.imageData.data[y * this.width * 4 + x * 4] = color.r
-        this.imageData.data[y * this.width * 4 + x * 4 + 1] = color.g
-        this.imageData.data[y * this.width * 4 + x * 4 + 2] = color.b
-        this.imageData.data[y * this.width * 4 + x * 4 + 3] = color.a
+        this.ctx.fillStyle = `rgb(${color.r}, ${color.g}, ${color.b}, ${color.a / 255})`
+        this.ctx.fillRect(x, y, 1, 1)
     }
+    
     getPixel(x: number, y: number): RGBColor {
-        const index = y * this.width * 4 + x * 4
+        const imageData = this.ctx.getImageData(x, y, 1, 1)
         return {
-            r: this.imageData.data[index]!,
-            g: this.imageData.data[index + 1]!,
-            b: this.imageData.data[index + 2]!,
-            a: this.imageData.data[index + 3]!
+            r: imageData.data[0]!,
+            g: imageData.data[1]!,
+            b: imageData.data[2]!,
+            a: imageData.data[3]!
         }
     }
 
-    runPixelShader(shader: PixelShader) {
+    executePixelShader(shader: PixelShader) {
         
-    }
-
-    commitEdits() {
-        this.ctx.putImageData(this.imageData, 0, 0)
     }
 }
